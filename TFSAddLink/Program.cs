@@ -20,7 +20,7 @@ namespace TFSAddLink
             public string Password { get; set; }
 
             [Option('i', "item", Required = true, HelpText = "Work item id")]
-            public string WorkItemID { get; set; }
+            public Int32 WorkItemID { get; set; }
 
             [Option('l', "link", Required = true, HelpText = "Link to add")]
             public string Link { get; set; }
@@ -33,7 +33,32 @@ namespace TFSAddLink
         }
         static void AddLink(Options options)
         {
-            Console.WriteLine(options.Username);
+
+            Console.OutputEncoding = System.Text.Encoding.Default;
+
+            Console.WriteLine("");
+
+            NetworkCredential credentials = new NetworkCredential(options.Username, options.Password);
+            TfsTeamProjectCollection tfs = new TfsTeamProjectCollection(new Uri(options.TFSAddress), credentials);
+
+            tfs.EnsureAuthenticated();
+            WorkItemStore workitemstore = tfs.GetService<WorkItemStore>();
+            Int32 workitemId = options.WorkItemID;
+            WorkItem workItem = workitemstore.GetWorkItem(workitemId);
+
+            Hyperlink link = new Hyperlink(options.Link);
+
+            try
+            {
+                workItem.Links.Add(link);
+                workItem.Save();
+                Console.WriteLine("Link saved");
+            }
+            catch (ValidationException exception)
+            {
+                Console.WriteLine("The work item threw a validation exception.");
+                Console.WriteLine(exception.Message);
+            }
         }
     }
 }
