@@ -31,30 +31,30 @@ namespace TFSAddLink
             var result = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed(options => AddLink(options));
         }
+        static TfsTeamProjectCollection ConnectToTFS(string address, string username, string password)
+        {
+            NetworkCredential credentials = new NetworkCredential(username, password);
+            TfsTeamProjectCollection tfs = new TfsTeamProjectCollection(new Uri(address), credentials);
+            tfs.EnsureAuthenticated();
+            return tfs;
+        }
         static void AddLink(Options options)
         {
 
-            Console.OutputEncoding = System.Text.Encoding.Default;
-
-            Console.WriteLine("");
-
-            NetworkCredential credentials = new NetworkCredential(options.Username, options.Password);
-            TfsTeamProjectCollection tfs = new TfsTeamProjectCollection(new Uri(options.TFSAddress), credentials);
-
-            tfs.EnsureAuthenticated();
-            WorkItemStore workitemstore = tfs.GetService<WorkItemStore>();
-            Int32 workitemId = options.WorkItemID;
-            WorkItem workItem = workitemstore.GetWorkItem(workitemId);
-
-            Hyperlink link = new Hyperlink(options.Link);
-
             try
             {
+                var tfs = ConnectToTFS(options.TFSAddress, options.Username, options.Password);
+                WorkItemStore workitemstore = tfs.GetService<WorkItemStore>();
+
+                WorkItem workItem = workitemstore.GetWorkItem(options.WorkItemID);
+
+                Hyperlink link = new Hyperlink(options.Link);
+
                 workItem.Links.Add(link);
                 workItem.Save();
                 Console.WriteLine("Link saved");
             }
-            catch (ValidationException exception)
+            catch (Exception exception)
             {
                 Console.WriteLine("The work item threw a validation exception.");
                 Console.WriteLine(exception.Message);
